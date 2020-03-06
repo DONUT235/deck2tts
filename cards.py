@@ -1,5 +1,4 @@
 import images
-from scryfall import ScryfallCardFactory
 from abc import ABC, abstractmethod
 import os
 import os.path
