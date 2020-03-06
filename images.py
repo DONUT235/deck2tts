@@ -1,6 +1,8 @@
+from PIL import Image
+
 def openImage(filename):
     #TODO get image data
-    pass
+    return PIL.open(filename)
 
 def combine(rows, columns, imageData):
     #TODO use pillow to build card sheet
