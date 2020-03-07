@@ -2,7 +2,17 @@ import images
 from abc import ABC, abstractmethod
 import os
 import os.path
-#How will we store the deck during conversion? Maybe dict: Card->Count?
+import downloads
+_cache_name = 'card-images'
+try:
+    os.mkdir(_cache_name)
+except FileExistsError:
+    #image cache already exists
+    pass
+
+def cache_location(filename):
+    return os.path.join(_cache_name, filename)
+
 
 class TTSCardBase(ABC):
     def __init__(self, name, image):
@@ -22,15 +32,6 @@ class TTSCardBase(ABC):
     def __hash__(self):
         return hash((self.name, self.image))
 
-_cache_name = 'card-images'
-try:
-    os.mkdir(_cache_name)
-except FileExistsError:
-    #image cache already exists
-    pass
-
-def cache_location(filename):
-    return os.path.join(_cache_name, filename)
 
 class OnlineTTSCard(TTSCardBase):
     def __init__(self, name, image, mtg_set='', face=0):
@@ -39,25 +40,22 @@ class OnlineTTSCard(TTSCardBase):
         self.face = face
 
     def openImage(self):
-        filename = self._filename()
+        filename = self.filename()
         if not os.path.exists(filename):
-            images.download(self.image, filename)
+            downloads.download(self.image, filename)
         return images.openImage(filename)
 
-    def _filename(self):
+    def filename(self):
         filename = self.name
-        if self.set is not None:
+        if self.set != '':
             filename = self.set+'-'+filename
         if self.face != 0:
             filename = filename+'-'+str(self.face)
         extension = self.image.split('.')[-1]
         return cache_location(filename+'.'+extension)
 
-class CustomTTSCard(TTSCardBase):
-    def __init__(self, name, image):
-        super(self).__init__(name, image)
-        self.image_opener = downloads.ImageOpener()
 
+class CustomTTSCard(TTSCardBase):
     def openImage(self):
         images.openImage(self.image)
 
