@@ -5,6 +5,10 @@ import unittest
 import decklist
 import os.path
 import tabletop
+import downloads
+from deckstats import DeckstatsDecklistReader
+from mtgo import MTGODecklistReader
+from arena import ArenaDecklistReader
 from time import sleep
 
 class ScryfallTest(unittest.TestCase):
@@ -21,7 +25,7 @@ class ScryfallTest(unittest.TestCase):
         self.assertEqual(forest.name, 'Forest')
         self.assertEqual(forest.set, 'C16')
 
-    @unittest.skip('slow')
+    @unittest.skip("slow and requires internet connection")
     def test_download_ashling(self):
         ashling = self.ds.make_card('Ashling the Pilgrim')
         if os.path.exists(ashling.filename()):
@@ -34,6 +38,7 @@ class ScryfallTest(unittest.TestCase):
         image_data = ashling.openImage()
         self.assertEqual(last_modified, os.stat(ashling.filename()).st_mtime)
         self.assertEqual(image_data.size, (488, 680))
+        self.assertFalse(ashling.image in downloads._cache)
         image_data.close()
 
     def test_associated(self):
@@ -91,17 +96,27 @@ class TTSDeckTests(unittest.TestCase):
         self.deck.add_main(card, 3)
         self.assertEqual(self.deck.get_main_count(card), 4)
 
-class DeckstatsTests(unittest.TestCase):
+class DecklistTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
     def setUp(self):
-        self.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
-        self.reader = decklist.DeckstatsDecklistReader(self.ds)
+        self.reader = None
+
+    def test_bad_input(self):
+        if self.reader is not None:
+            self.reader.processCard('*@&&$*(@(*& Cunk Cunk #Cu#nk#')
+
+class DeckstatsTests(DecklistTest):
+    def setUp(self):
+        self.reader = DeckstatsDecklistReader(self.ds)
         self.aaron = cards.CustomTTSCard(
             'Aaron Glave, Time Wizard', 'card-images\\aaron.jpg')
         self.aaron_line = '1 Aaron Glave, Time Wizard #!Custom(card-images\\aaron.jpg)'
 
     def test_add_with_set(self):
-        self.reader.processCard('1 [C16] Mountain')
-        card = self.ds.make_card('Mountain', 'C16')
+        self.reader.processCard('1 [C16] Forest')
+        card = self.ds.make_card('Forest', 'C16')
         self.assertEqual(self.reader.deck.get_main_count(card), 1)
         for card in self.reader.deck.main.cards:
             self.assertEqual(card.set, 'C16')
@@ -153,15 +168,18 @@ class DeckstatsTests(unittest.TestCase):
         self.reader.processCard(self.aaron_line+' !Commander')
         self.assertTrue(self.reader.deck.is_commander(self.aaron))
 
-class ArenaTests(unittest.TestCase):
+class ArenaTests(DecklistTest):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.brainstorm = cls.ds.make_card('Brainstorm', 'C18')
     def setUp(self):
-        self.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
-        self.reader = decklist.ArenaDecklistReader(self.ds)
+        self.reader = ArenaDecklistReader(self.ds)
 
     def testSingleCard(self):
+        self.assertEqual(self.reader.deck.get_main_count(self.brainstorm), 0)
         self.reader.processCard('1 Brainstorm (C18) 82')
-        brainstorm = self.ds.make_card('Brainstorm', 'C18')
-        self.assertEqual(self.reader.deck.get_main_count(brainstorm), 1)
+        self.assertEqual(self.reader.deck.get_main_count(self.brainstorm), 1)
 
     def testSideDeck(self):
         self.reader.processCard('1 Brainstorm (C18) 82')
@@ -173,14 +191,13 @@ class ArenaTests(unittest.TestCase):
         self.assertEqual(self.reader.deck.get_side_count(counterspell), 1)
         self.assertEqual(self.reader.deck.get_main_count(counterspell), 0)
 
-class MTGOTests(unittest.TestCase):
+class MTGOTests(DecklistTest):
     def setUp(self):
-        self.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
-        self.reader = decklist.MTGODecklistReader(self.ds)
+        self.reader = MTGODecklistReader(self.ds)
 
     def testSingleCard(self):
-        self.reader.processCard('2 Island')
-        island = self.ds.make_card('Island')
+        self.reader.processCard('2 Mountain')
+        island = self.ds.make_card('Mountain')
         self.assertEqual(self.reader.deck.get_main_count(island), 2)
 
 if __name__ == '__main__':

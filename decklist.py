@@ -9,11 +9,25 @@ class DecklistReader(ABC):
         self.addRelated = addRelated
         self.deck = TTSDeck()
         self.state = 'Main'
-        self._setup_stragegies()
 
     @abstractmethod
-    def _setup_stragegies(self):
-        pass
+    def card_reader_strategy(self, line):
+        r"""Handles lines corresponding to MTG cards.
+        Returns (name, count, is_sideboard, mtg_set, comment)
+        as a tuple if a card was found. Returns None in 'name'
+        if no card was found."""
+        return (False, None, 0, '', '')
+
+    @abstractmethod
+    def line_decision_strategy(self, line):
+        r"""Handles lines that may or may not be cards.
+        Returns one of the following: 
+        'Card': The line is a card.
+        'Same': Don't do anything with this line.
+        'Side': Put subsequent cards in the sideboard.
+        'Main': Put subsequent cards in the main deck.
+        'Maybeboard': Ignore subsequent cards."""
+        return 'Same'
 
     def read_list(self, filename):
         decklist = open(filename)
@@ -31,7 +45,11 @@ class DecklistReader(ABC):
         if self.state == 'Maybeboard':
             return
 
-        is_sideboard, name, count, mtg_set, comment = self.card_reader_strategy(line)
+        name, count, is_sideboard, mtg_set, comment = self.card_reader_strategy(line)
+        if name is None:
+            print('Bad formatting: Line',line,'will be ignored.')
+            return
+
         newcard = None
         if '!Custom' in comment:
             filename_pattern = r'!Custom\(([^)]+)\)'
@@ -53,77 +71,23 @@ class DecklistReader(ABC):
         else:
             self.deck.add_main(newcard, count)
 
+class RegexCardReaderStrategy(ABC):
+    def __call__(self, line):
+        match = self.pattern.match(line)
+        if match is None:
+            return (None, 0, False, '', '')
+        name, count = map(
+            str.strip, match.group('name', 'count'))
+        count = int(count)
+        is_sideboard, mtg_set, comment = self.other_props(match)
+        return (name, count, is_sideboard, mtg_set, comment)
 
-_deckstats_card_pattern = re.compile(
-    r'(?P<sideboard>SB: )?(?P<count>\d+) (\[(?P<set>[^]]+)\] )?'
-    + r'(?P<name>[^#]+)(?P<comment>#.*)?')
+    @property
+    @abstractmethod
+    def pattern(self):
+        """Compiled regex pattern. Should have 'name' and 'count' groups."""
+        pass
 
-def _deckstats_line_decision(line):
-    if line in ('Sideboard', '//Sideboard'):
-        return 'Side'
-
-    if line == '//Maybeboard':
-        return 'Maybeboard'
-
-    match = _deckstats_card_pattern.match(line)
-    if match is None:
-        if line[0:2] != '//':
-            print('Bad formatting: Line',line,'will be ignored.')
-            return 'Same'
-        else:
-            #found a custom category
-            return 'Main'
-
-    return 'Card'
-
-def _deckstats_card_reader(line):
-    match = _deckstats_card_pattern.match(line)
-    count, name = _count_and_name(line, match)
-    sideboard, mtg_set, comment = map(
-        lambda s: (s.strip() if s is not None else ''),
-        match.group('sideboard', 'set', 'comment'))
-    sideboard = bool(sideboard)
-    return (sideboard, name, count, mtg_set, comment)
-
-
-class DeckstatsDecklistReader(DecklistReader):
-    def _setup_stragegies(self):
-        self.line_decision_strategy = _deckstats_line_decision
-        self.card_reader_strategy = _deckstats_card_reader
-
-def _blank_line_decision(line):
-    if line.strip() == '':
-        return 'Side'
-    else:
-        return 'Card'
-
-_arena_card_pattern = re.compile(
-    r'(?P<count>\d+) (?P<name>.+) \((?P<set>[^)]+)\) \d+')
-
-def _count_and_name(line, match):
-    count, name = map(
-        str.strip, match.group('count', 'name'))
-    count = int(count)
-    return (count, name)
-
-def _arena_card_reader(line):
-    match = _arena_card_pattern.match(line)
-    count, name = _count_and_name(line, match)
-    mtg_set = match.group('set').strip()
-    return (False, name, count, mtg_set, '')
-
-class ArenaDecklistReader(DecklistReader):
-    def _setup_stragegies(self):
-        self.line_decision_strategy = _blank_line_decision
-        self.card_reader_strategy = _arena_card_reader
-
-_mtgo_card_pattern = re.compile(r'(?P<count>\d+) (?P<name>.+)')
-def _mtgo_card_reader(line):
-    match = _mtgo_card_pattern.match(line)
-    count, name = _count_and_name(line, match)
-    return (False, name, count, '', '')
-
-class MTGODecklistReader(DecklistReader):
-    def _setup_stragegies(self):
-        self.line_decision_strategy = _blank_line_decision
-        self.card_reader_strategy = _mtgo_card_reader
+    def other_props(self, match):
+        """Return (is_sideboard, mtg_set, comment) as a tuple."""
+        return (False, '', '')
