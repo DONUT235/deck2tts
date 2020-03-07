@@ -16,7 +16,7 @@ class DecklistReader(ABC):
         Returns (name, count, is_sideboard, mtg_set, comment)
         as a tuple if a card was found. Returns None in 'name'
         if no card was found."""
-        return (False, None, 0, '', '')
+        return (None, 0, False, '', '')
 
     @abstractmethod
     def line_decision_strategy(self, line):
