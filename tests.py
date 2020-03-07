@@ -6,9 +6,9 @@ import decklist
 import os.path
 import tabletop
 import downloads
-from deckstats import DeckstatsDecklistReader
-from mtgo import MTGODecklistReader
-from arena import ArenaDecklistReader
+from decklist.deckstats import DeckstatsDecklistReader
+from decklist.mtgo import MTGODecklistReader
+from decklist.arena import ArenaDecklistReader
 from time import sleep
 
 class ScryfallTest(unittest.TestCase):

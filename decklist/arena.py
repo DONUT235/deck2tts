@@ -1,5 +1,5 @@
-from decklist import RegexCardReaderStrategy
-from mtgo import BlankLineDeckSeparatingReader
+from . import RegexCardReaderStrategy
+from .mtgo import BlankLineDeckSeparatingReader
 import re
 
 class ArenaCardReader(RegexCardReaderStrategy):
