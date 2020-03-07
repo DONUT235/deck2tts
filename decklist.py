@@ -78,11 +78,11 @@ def _deckstats_line_decision(line):
 
 def _deckstats_card_reader(line):
     match = _deckstats_card_pattern.match(line)
-    sideboard, name, count, mtg_set, comment = map(
+    count, name = _count_and_name(line, match)
+    sideboard, mtg_set, comment = map(
         lambda s: (s.strip() if s is not None else ''),
-        match.group('sideboard', 'name', 'count', 'set', 'comment'))
+        match.group('sideboard', 'set', 'comment'))
     sideboard = bool(sideboard)
-    count = int(count)
     return (sideboard, name, count, mtg_set, comment)
 
 
@@ -97,14 +97,31 @@ def _blank_line_decision(line):
     else:
         return 'Card'
 
-_mtgo_card_pattern = re.compile(
+_arena_card_pattern = re.compile(
     r'(?P<count>\d+) (?P<name>.+) \((?P<set>[^)]+)\) \d+')
+
+def _count_and_name(line, match):
+    count, name = map(
+        str.strip, match.group('count', 'name'))
+    count = int(count)
+    return (count, name)
+
+def _arena_card_reader(line):
+    match = _arena_card_pattern.match(line)
+    count, name = _count_and_name(line, match)
+    mtg_set = match.group('set').strip()
+    return (False, name, count, mtg_set, '')
+
+class ArenaDecklistReader(DecklistReader):
+    def _setup_stragegies(self):
+        self.line_decision_strategy = _blank_line_decision
+        self.card_reader_strategy = _arena_card_reader
+
+_mtgo_card_pattern = re.compile(r'(?P<count>\d+) (?P<name>.+)')
 def _mtgo_card_reader(line):
     match = _mtgo_card_pattern.match(line)
-    count, name, mtg_set = map(
-        str.strip, match.group('count', 'name', 'set'))
-    count = int(count)
-    return (False, name, count, mtg_set, '')
+    count, name = _count_and_name(line, match)
+    return (False, name, count, '', '')
 
 class MTGODecklistReader(DecklistReader):
     def _setup_stragegies(self):

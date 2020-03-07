@@ -153,10 +153,10 @@ class DeckstatsTests(unittest.TestCase):
         self.reader.processCard(self.aaron_line+' !Commander')
         self.assertTrue(self.reader.deck.is_commander(self.aaron))
 
-class MTGOTests(unittest.TestCase):
+class ArenaTests(unittest.TestCase):
     def setUp(self):
         self.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
-        self.reader = decklist.MTGODecklistReader(self.ds)
+        self.reader = decklist.ArenaDecklistReader(self.ds)
 
     def testSingleCard(self):
         self.reader.processCard('1 Brainstorm (C18) 82')
@@ -173,6 +173,15 @@ class MTGOTests(unittest.TestCase):
         self.assertEqual(self.reader.deck.get_side_count(counterspell), 1)
         self.assertEqual(self.reader.deck.get_main_count(counterspell), 0)
 
+class MTGOTests(unittest.TestCase):
+    def setUp(self):
+        self.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
+        self.reader = decklist.MTGODecklistReader(self.ds)
+
+    def testSingleCard(self):
+        self.reader.processCard('2 Island')
+        island = self.ds.make_card('Island')
+        self.assertEqual(self.reader.deck.get_main_count(island), 2)
 
 if __name__ == '__main__':
     unittest.main()
