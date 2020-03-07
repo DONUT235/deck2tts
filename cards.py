@@ -57,19 +57,4 @@ class OnlineTTSCard(TTSCardBase):
 
 class CustomTTSCard(TTSCardBase):
     def openImage(self):
-        images.openImage(self.image)
-
-
-class TTSDeck:
-    def __init__(self):
-        self.main = {}
-        self.side = set()
-
-    def add_main(card, count):
-        if new_card in self.main:
-            self.main[new_card] += count
-        else:
-            self.main[new_card] = count
-
-    def _add_side(card):
-        side.add(card)
+        return images.openImage(self.image)

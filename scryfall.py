@@ -51,7 +51,7 @@ class ScryfallCardFactory:
 
         if 'card_faces' in card_json and 'image_uris' not in card_json:
             for face in range(1, len(card_json['card_faces'])):
-                image = _image_uri(card_json['card_faces'][face])
+                image = self._image_uri(card_json['card_faces'][face])
                 face_name = card_json['card_faces'][face]['name']
                 yield cards.OnlineTTSCard(face_name, image, mtg_set, face)
 

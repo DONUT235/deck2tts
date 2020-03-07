@@ -26,9 +26,6 @@ def register_host(host, delay):
     _host_times[host] = datetime.datetime.now()
 
 def download(url, filename):
-    print('Downloading:',url)
-    #TODO download image to file
     webData = cache_request(url)
     with open(filename, 'wb') as out:
-        #TODO Converter should resize image to 488x680
         shutil.copyfileobj(webData, out)
