@@ -201,4 +201,4 @@ class MTGOTests(DecklistTest):
         self.assertEqual(self.reader.deck.get_main_count(island), 2)
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(buffer=True)
