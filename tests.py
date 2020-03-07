@@ -153,5 +153,26 @@ class DeckstatsTests(unittest.TestCase):
         self.reader.processCard(self.aaron_line+' !Commander')
         self.assertTrue(self.reader.deck.is_commander(self.aaron))
 
+class MTGOTests(unittest.TestCase):
+    def setUp(self):
+        self.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
+        self.reader = decklist.MTGODecklistReader(self.ds)
+
+    def testSingleCard(self):
+        self.reader.processCard('1 Brainstorm (C18) 82')
+        brainstorm = self.ds.make_card('Brainstorm', 'C18')
+        self.assertEqual(self.reader.deck.get_main_count(brainstorm), 1)
+
+    def testSideDeck(self):
+        self.reader.processCard('1 Brainstorm (C18) 82')
+        self.reader.processCard('')
+        self.reader.processCard('1 Counterspell (A25) 50')
+        brainstorm = self.ds.make_card('Brainstorm', 'C18')
+        counterspell = self.ds.make_card('Counterspell', 'A25')
+        self.assertEqual(self.reader.deck.get_side_count(brainstorm), 0)
+        self.assertEqual(self.reader.deck.get_side_count(counterspell), 1)
+        self.assertEqual(self.reader.deck.get_main_count(counterspell), 0)
+
+
 if __name__ == '__main__':
     unittest.main()
