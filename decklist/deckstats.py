@@ -21,6 +21,8 @@ class DeckstatsDecklistReader(DecklistReader):
             return 'Side'
         if line == '//Maybeboard':
             return 'Maybeboard'
+        if line in ('Main', '//Main'):
+            return 'Main'
 
         match = DeckstatsCardReader.pattern.match(line)
         if match is None:
