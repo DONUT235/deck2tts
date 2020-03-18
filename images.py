@@ -1,5 +1,16 @@
+import os
 from PIL import Image
 import urllib.request
+
+_cache_name = 'card-images'
+try:
+    os.mkdir(_cache_name)
+except FileExistsError:
+    #image cache already exists
+    pass
+
+def cache_location(filename):
+    return os.path.join(_cache_name, filename)
 
 def open_image(filename):
     return Image.open(filename)

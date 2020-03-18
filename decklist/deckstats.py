@@ -14,7 +14,10 @@ class DeckstatsCardReader(RegexCardReaderStrategy):
 
 class DeckstatsDecklistReader(DecklistReader):
     def line_decision_strategy(self, line):
-        if line in ('Sideboard', '//Sideboard'):
+        line = line.strip()
+        if line == '':
+            return 'Same'
+        if line in ('Sideboard', '//Sideboard', 'Sideboard:'):
             return 'Side'
         if line == '//Maybeboard':
             return 'Maybeboard'

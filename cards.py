@@ -1,20 +1,9 @@
 import images
 from abc import ABC, abstractmethod
-import os
 import os.path
 import downloads
 import json
 from tabletop import DEFAULT_TRANSFORM
-
-_cache_name = 'card-images'
-try:
-    os.mkdir(_cache_name)
-except FileExistsError:
-    #image cache already exists
-    pass
-
-def cache_location(filename):
-    return os.path.join(_cache_name, filename)
 
 
 class TTSCardBase(ABC):
@@ -38,7 +27,8 @@ class TTSCardBase(ABC):
     def toTTS(self, card_id):
         tts_data = {'Name': 'Card'}
         tts_data['Nickname'] = self.name
-        tts_data['Transform'] = DEFAULT_TRANSFORM
+        tts_data['Transform'] = DEFAULT_TRANSFORM()
+        tts_data['Transform']['posY'] = 0
         tts_data['CardID'] = card_id
         return tts_data
 
@@ -62,7 +52,7 @@ class OnlineTTSCard(TTSCardBase):
         if self.face != 0:
             filename = filename+'-'+str(self.face)
         extension = self.image.split('.')[-1]
-        return cache_location(filename+'.'+extension)
+        return images.cache_location(filename+'.'+extension)
 
 
 class CustomTTSCard(TTSCardBase):

@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 import cards
-from tabletop import TTSDeck
+from tabletop import TTSDeckObject
 import re
 
 class DecklistReader(ABC):
-    def __init__(self, datasource, addRelated=True):
+    def __init__(self, deck_name, datasource, addRelated=True, upload=True):
         self.datasource = datasource
         self.addRelated = addRelated
-        self.deck = TTSDeck()
+        self.deck = TTSDeckObject(deck_name, upload=upload)
         self.state = 'Main'
 
     @abstractmethod

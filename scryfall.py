@@ -46,8 +46,9 @@ class ScryfallCardFactory:
         if 'all_parts' in card_json:
             included_types = set(("token", "meld_result"))
             for part in card_json['all_parts']:
-                other_card = downloads._cache_request(part['uri'], json.load)
-                yield self._card_from_json(other_card)
+                if part['component'] in included_types:
+                    other_card = downloads.cache_request(part['uri'], json.load)
+                    yield self._card_from_json(other_card)
 
         if 'card_faces' in card_json and 'image_uris' not in card_json:
             for face in range(1, len(card_json['card_faces'])):

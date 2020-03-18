@@ -10,22 +10,44 @@ from decklist.deckstats import DeckstatsDecklistReader
 from decklist.mtgo import MTGODecklistReader
 from decklist.arena import ArenaDecklistReader
 from time import sleep
+import json
+
+def get_aaron():
+    return cards.CustomTTSCard(
+            'Aaron Glave, Time Wizard',
+            os.path.join('card-images', 'aaron.jpg'))
 
 class TTSTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.image = images.open_image(cards.cache_location('aaron.jpg'))
+        cls.image = images.open_image(images.cache_location('aaron.jpg'))
 
-    def test_add70(self):
-        mgr = tabletop.TTSCardSheetManager()
+    def test_add70_manager(self):
+        mgr = tabletop.TTSCardSheetManager('test_add70_manager')
         for i in range(69):
-            self.assertEqual(100+i, mgr.add_card(self.image))
-        self.assertEqual(200, mgr.add_card(self.image))
+            self.assertEqual(100+i, mgr.add_card(self.image, 'Test'))
+        self.assertEqual(mgr.add_card(self.image, 'Test'), 200)
+        sheets = list(mgr.get_sheets('Test'))
+        self.assertEqual(len(sheets), 2)
+        self.assertEqual(sheets[0][0], 1)
+        self.assertEqual(sheets[1][0], 2)
+        self.assertEqual(len(sheets[0][1]), 69)
+        self.assertEqual(len(sheets[1][1]), 1)
+
+    def test_save(self):
+        mgr = tabletop.TTSCardSheetManager('test_save')
+        mgr.add_card(self.image, 'Test')
+        mgr.add_card(self.image, 'Test')
+        result = mgr.sheet_to_TTS(1)
+        self.assertEqual(result['NumWidth'], 2)
+        self.assertEqual(result['NumHeight'], 1)
+        self.assertTrue('BackURL' in result)
+        self.assertTrue(os.path.exists('test_save-1.jpg'))
 
 class ScryfallTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
+        cls.ds = ScryfallCardFactory(images.cache_location('default.jpg'))
 
     def test_werewolf(self):
         werewolf = self.ds.make_card('Gatstaf Arsonists // Gatstaf Ravagers')
@@ -90,27 +112,35 @@ class PillowTests(unittest.TestCase):
         self.assertEqual(big.size, (4096, expectedHeight))
 
     def test_custom_image(self):
-        aaron = cards.CustomTTSCard(
-            'Aaron Glave, Time Wizard', 'card-images\\aaron.jpg')
+        aaron = get_aaron()
         img = aaron.open_image()
         self.assertEqual(img.size, (488, 680))
         img.close()
 
 class TTSDeckTests(unittest.TestCase):
     def setUp(self):
-        self.deck = tabletop.TTSDeck()
+        self.deck = tabletop.TTSDeckObject('TTSDeckTest')
 
     def test_add_twice(self):
-        card = cards.CustomTTSCard(
-            'Aaron Glave, Time Wizard', 'card-images\\aaron.jpg')
+        card = get_aaron()
         self.deck.add_main(card, 1)
         self.deck.add_main(card, 3)
         self.assertEqual(self.deck.get_main_count(card), 4)
 
+    def test_make_deck(self):
+        #this is the BIG KAHUNA
+        datasource = ScryfallCardFactory(images.cache_location('default.jpg'))
+        reader = DeckstatsDecklistReader('Ashling', datasource, upload=False)
+        reader.processCard('1 Ashling, the Pilgrim #!Commander')
+        reader.processCard('99 Mountain')
+        deck_json = reader.deck.to_json()
+        out = open('Ashling.json', 'w')
+        out.write(deck_json)
+
 class DecklistTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.ds = ScryfallCardFactory(cards.cache_location('default.jpg'))
+        cls.ds = ScryfallCardFactory(images.cache_location('default.jpg'))
     def setUp(self):
         self.reader = None
 
@@ -120,9 +150,8 @@ class DecklistTest(unittest.TestCase):
 
 class DeckstatsTests(DecklistTest):
     def setUp(self):
-        self.reader = DeckstatsDecklistReader(self.ds)
-        self.aaron = cards.CustomTTSCard(
-            'Aaron Glave, Time Wizard', 'card-images\\aaron.jpg')
+        self.reader = DeckstatsDecklistReader('DeckstatsTest', self.ds)
+        self.aaron = get_aaron()
         self.aaron_line = '1 Aaron Glave, Time Wizard #!Custom(card-images\\aaron.jpg)'
 
     def test_add_with_set(self):
@@ -179,13 +208,28 @@ class DeckstatsTests(DecklistTest):
         self.reader.processCard(self.aaron_line+' !Commander')
         self.assertTrue(self.reader.deck.is_commander(self.aaron))
 
+    def test_small_deck(self):
+        self.aaron_line = '2 '+self.aaron_line.lstrip('1 ')
+        self.reader.processCard(self.aaron_line)
+        deck_json = self.reader.deck.to_json()
+        deck = json.loads(deck_json)
+        self.assertTrue('ObjectStates' in deck)
+        object_states = deck['ObjectStates']
+        self.assertEqual(len(object_states), 1)
+        main = object_states[0]
+        self.assertTrue('Transform' in main)
+        self.assertTrue('DeckIDs' in main)
+        self.assertEqual(len(main['DeckIDs']), 2)
+        self.assertTrue(main['DeckIDs'][0] == main['DeckIDs'][1])
+
+
 class ArenaTests(DecklistTest):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.brainstorm = cls.ds.make_card('Brainstorm', 'C18')
     def setUp(self):
-        self.reader = ArenaDecklistReader(self.ds)
+        self.reader = ArenaDecklistReader('ArenaTest', self.ds)
 
     def testSingleCard(self):
         self.assertEqual(self.reader.deck.get_main_count(self.brainstorm), 0)
@@ -204,7 +248,7 @@ class ArenaTests(DecklistTest):
 
 class MTGOTests(DecklistTest):
     def setUp(self):
-        self.reader = MTGODecklistReader(self.ds)
+        self.reader = MTGODecklistReader('MTGOTest', self.ds)
 
     def testSingleCard(self):
         self.reader.processCard('2 Mountain')
