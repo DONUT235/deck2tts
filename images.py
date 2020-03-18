@@ -1,7 +1,7 @@
 from PIL import Image
 import urllib.request
 
-def openImage(filename):
+def open_image(filename):
     return Image.open(filename)
 
 def combine(imageData, grid_size, img_size, out):

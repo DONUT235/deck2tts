@@ -3,6 +3,9 @@ from abc import ABC, abstractmethod
 import os
 import os.path
 import downloads
+import json
+from tabletop import DEFAULT_TRANSFORM
+
 _cache_name = 'card-images'
 try:
     os.mkdir(_cache_name)
@@ -26,11 +29,18 @@ class TTSCardBase(ABC):
         return False
 
     @abstractmethod
-    def openImage(self):
+    def open_image(self):
         pass
 
     def __hash__(self):
         return hash((self.name, self.image))
+
+    def toTTS(self, card_id):
+        tts_data = {'Name': 'Card'}
+        tts_data['Nickname'] = self.name
+        tts_data['Transform'] = DEFAULT_TRANSFORM
+        tts_data['CardID'] = card_id
+        return tts_data
 
 
 class OnlineTTSCard(TTSCardBase):
@@ -39,11 +49,11 @@ class OnlineTTSCard(TTSCardBase):
         self.set = mtg_set
         self.face = face
 
-    def openImage(self):
+    def open_image(self):
         filename = self.filename()
         if not os.path.exists(filename):
             downloads.download(self.image, filename)
-        return images.openImage(filename)
+        return images.open_image(filename)
 
     def filename(self):
         filename = self.name
@@ -56,5 +66,5 @@ class OnlineTTSCard(TTSCardBase):
 
 
 class CustomTTSCard(TTSCardBase):
-    def openImage(self):
-        return images.openImage(self.image)
+    def open_image(self):
+        return images.open_image(self.image)

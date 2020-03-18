@@ -11,6 +11,17 @@ from decklist.mtgo import MTGODecklistReader
 from decklist.arena import ArenaDecklistReader
 from time import sleep
 
+class TTSTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.image = images.open_image(cards.cache_location('aaron.jpg'))
+
+    def test_add70(self):
+        mgr = tabletop.TTSCardSheetManager()
+        for i in range(69):
+            self.assertEqual(100+i, mgr.add_card(self.image))
+        self.assertEqual(200, mgr.add_card(self.image))
+
 class ScryfallTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -30,12 +41,12 @@ class ScryfallTest(unittest.TestCase):
         ashling = self.ds.make_card('Ashling the Pilgrim')
         if os.path.exists(ashling.filename()):
             os.remove(ashling.filename())
-        image_data = ashling.openImage()
+        image_data = ashling.open_image()
         image_data.close()
         self.assertTrue(os.path.exists(ashling.filename()))
         last_modified = os.stat(ashling.filename()).st_mtime
         sleep(2)
-        image_data = ashling.openImage()
+        image_data = ashling.open_image()
         self.assertEqual(last_modified, os.stat(ashling.filename()).st_mtime)
         self.assertEqual(image_data.size, (488, 680))
         self.assertFalse(ashling.image in downloads._cache)
@@ -51,9 +62,9 @@ class ScryfallTest(unittest.TestCase):
 class PillowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.back = images.openImage('card-images\\CardBack.jpg')
+        cls.back = images.open_image('card-images\\CardBack.jpg')
         cls.img_size = (488, 680)
-        cls.default = images.openImage('card-images\\default.jpg')
+        cls.default = images.open_image('card-images\\default.jpg')
 
     @classmethod
     def tearDownClass(cls):
@@ -81,7 +92,7 @@ class PillowTests(unittest.TestCase):
     def test_custom_image(self):
         aaron = cards.CustomTTSCard(
             'Aaron Glave, Time Wizard', 'card-images\\aaron.jpg')
-        img = aaron.openImage()
+        img = aaron.open_image()
         self.assertEqual(img.size, (488, 680))
         img.close()
 
