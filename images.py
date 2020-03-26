@@ -28,5 +28,9 @@ def combine(imageData, grid_size, img_size, out):
         cur_col = (cur_col + 1) % grid_size[0]
         if cur_col == 0:
             cur_row = (cur_row + 1) % grid_size[1]
+    if width > 4096:
+        height = round(height*4096/width)
+        width = 4096
+        result = result.resize((width, height))
     result.save(out)
     return result
