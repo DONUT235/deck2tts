@@ -1,5 +1,6 @@
-big.jpg
-combined.jpg
 _cache.pkl
 *.txt
-card-images/Ashling the Pilgrim.jpg
+*.jpg
+*.json
+!card-images/CardBack.jpg
+!card-images/default.jpg

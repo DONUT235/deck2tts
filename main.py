@@ -4,11 +4,12 @@ from decklist.deckstats import DeckstatsDecklistReader
 from decklist.mtgo import MTGODecklistReader
 from decklist.arena import ArenaDecklistReader
 import scryfall
+import imgur
 from images import cache_location
 
 DEFAULT_IMAGE = cache_location('default.jpg')
 
-def main(args):
+def main():
     parser = argparse.ArgumentParser(
         description='Tabletop Simulator Deck Generator')
     parser.add_argument('-f', '--format',
@@ -28,6 +29,8 @@ def main(args):
     name = arguments.deck_name
     datasource = scryfall.ScryfallCardFactory(DEFAULT_IMAGE)
     upload = not arguments.no_upload
+    if upload:
+        imgur.authorize()
     if decklist_format == 'arena':
         reader = ArenaDecklistReader(name, datasource, upload=upload)
     elif decklist_format == 'mtgo':
@@ -42,4 +45,4 @@ def main(args):
     out.write(tts_json)
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()
