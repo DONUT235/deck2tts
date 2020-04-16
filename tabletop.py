@@ -18,13 +18,17 @@ def DEFAULT_TRANSFORM():
 class EmptyDeckError(Exception):
     pass
 
+def _print_convert_message(card):
+    print('Converting:', card.name)
+
 class TTSDeckObject:
-    def __init__(self, deck_name, upload=True):
+    def __init__(self, deck_name, upload=True, log=False):
         self.sheet_manager = TTSCardSheetManager(deck_name, upload)
         self.main = TTSSingleDeck(self.sheet_manager)
         self.side = TTSSingleDeck(self.sheet_manager)
         self.extra = TTSExtraDeck(self.sheet_manager)
         self.command_zone = TTSExtraDeck(self.sheet_manager)
+        self.log = log
 
     def get_main_count(self, card):
         return self.main.get_count(card)
@@ -50,25 +54,27 @@ class TTSDeckObject:
     def add_extra(self, card):
         self.extra.add_card(card)
 
-    def _add_deck(self, deck, object_list, posX=0, log=False, name=''):
+    def _add_deck(self, deck, object_list, posX=0, name=''):
         try:
-            deck_data = deck.toTTS(posX, log=log, name=name)
+            deck_data = deck.toTTS(posX)
+            if self.log:
+                print('Done converting', name)
             object_list.append(deck_data)
             #slide the deck to the left each time the method is called
             return posX-4
         except EmptyDeckError:
             return posX
 
-    def to_json(self, log=False):
+    def to_json(self):
         object_list = []
         posX = self._add_deck(
-            self.main, object_list, log=log, name='main deck')
+            self.main, object_list, name='main deck')
         posX = self._add_deck(
-            self.command_zone, object_list, posX=posX, log=log, name='commander')
+            self.command_zone, object_list, posX=posX, name='commander')
         posX = self._add_deck(
-            self.extra, object_list, posX=posX, log=log, name='token deck')
+            self.extra, object_list, posX=posX, name='token deck')
         posX = self._add_deck(
-            self.side, object_list, posX=posX, log=log, name='side deck')
+            self.side, object_list, posX=posX, name='side deck')
         tts_data = {'ObjectStates': object_list}
         return json.dumps(tts_data)
 
@@ -82,7 +88,7 @@ class TTSDeckBase(ABC):
     def get_count(self, card):
         pass
 
-    def toTTS(self, posX, log=False, name=''):
+    def toTTS(self, posX, card_callback=lambda c: None):
         deck_size = sum(self.get_count(card) for card in self)
         if deck_size == 0:
             raise EmptyDeckError()
@@ -103,22 +109,18 @@ class TTSDeckBase(ABC):
             tts_data['DeckIDs'] = []
             for card in self:
                 count = self.get_count(card)
-                if log:
-                    print('Converting:', card.name)
+                card_callback(card)
                 card_id = self.sheet_manager.add_card(card.open_image(), id(self))
                 for _ in range(count):
                     tts_data['DeckIDs'].append(card_id)
                     tts_data['ContainedObjects'].append(card.toTTS(card_id))
         else:
             only_card = list(self)[0]
-            if log:
-                print('Converting:', only_card.name)
+            card_callback(only_card)
             tts_data['Nickname'] = only_card.name
             tts_data['CardID'] = self.sheet_manager.add_card(
                 only_card.open_image(), id(self))
         for deck_number, sheet in self.sheet_manager.get_sheets(id(self)):
-            if log:
-                print("Generating", name, "image.")
             tts_data['CustomDeck'][deck_number] = (
                 self.sheet_manager.sheet_to_TTS(deck_number))
         return tts_data
