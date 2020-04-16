@@ -4,10 +4,11 @@ from tabletop import TTSDeckObject
 import re
 
 class DecklistReader(ABC):
-    def __init__(self, deck_name, datasource, addRelated=True, upload=True):
+    def __init__(self, deck_name, datasource,
+            addRelated=True, upload=True, log=False):
         self.datasource = datasource
         self.addRelated = addRelated
-        self.deck = TTSDeckObject(deck_name, upload=upload)
+        self.deck = TTSDeckObject(deck_name, upload=upload, log=log)
         self.state = 'Main'
 
     @abstractmethod

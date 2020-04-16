@@ -25,13 +25,23 @@ def main():
         help='if specified, do not upload the file to imgur')
     parser.add_argument(
         'decklist_file',
-        help='Name of the text file containing the decklist')
+        help='Name of the text file containing the decklist',
+        nargs='?')
     parser.add_argument(
         'deck_name',
-        help='Name of the Tabletop Simulator saved object to be created')
+        help='Name of the Tabletop Simulator saved object to be created',
+        nargs='?')
+
     arguments = parser.parse_args()
     decklist_format = arguments.format.lower()
     name = arguments.deck_name
+    if name is None:
+        name = input('Name of the Tabletop Simulator saved object '
+        + 'to be created: ')
+    decklist_file = arguments.decklist_file
+    if decklist_file is None:
+        decklist_file = input('Name of the text file '
+        +'containing the decklist: ')
     datasource = scryfall.ScryfallCardFactory(DEFAULT_IMAGE)
     upload = not arguments.no_upload
     if upload:
@@ -43,7 +53,7 @@ def main():
     else:
         reader = DeckstatsDecklistReader(
             name, datasource, upload=upload, log=True)
-    for line in open(arguments.decklist_file):
+    for line in open(decklist_file):
         print('Reading line:', line.strip())
         reader.processCard(line)
     tts_json = reader.deck.to_json()
