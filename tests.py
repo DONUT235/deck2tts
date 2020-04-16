@@ -134,8 +134,8 @@ class TTSDeckTests(unittest.TestCase):
         reader.processCard('1 Ashling, the Pilgrim #!Commander')
         reader.processCard('99 Mountain')
         deck_json = reader.deck.to_json()
-        out = open('Ashling.json', 'w')
-        out.write(deck_json)
+        with out as open('Ashling.json', 'w'):
+            out.write(deck_json)
 
 class DecklistTest(unittest.TestCase):
     @classmethod
